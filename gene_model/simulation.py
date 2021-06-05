@@ -1,4 +1,5 @@
 from abc import ABC
+from copy import deepcopy
 from random import getrandbits, randint
 from typing import Callable, List, Tuple
 
@@ -8,20 +9,20 @@ from gene_model.chromosome import Chromosome, Individual
 class Simulation(ABC):
     def __init__(
         self,
-        fitness_function: Callable = lambda x: sum(
-            [sum(c.get_genes()) for c in x.get_chromosomes()]
-        ),
+        has_converged: Callable = lambda x, y: bool(getrandbits(1)),
+        mutation_rate: float = 0.5,
         population_size: int = 4,
     ):
         super().__init__()
-        self.__fitness_function: Callable = fitness_function
-        self.__mutation_rate: float = 0.5
+        self.__generations: int = 0
+        self.__has_converged: Callable = has_converged
+        self.__mutation_rate: float = mutation_rate
         self.__population: List[Individual] = []
         self.__population_size: int = population_size
 
     @staticmethod
-    def __has_converged() -> bool:
-        return bool(getrandbits(1))
+    def _fitness_function(individual: Individual) -> int:
+        return sum([sum(c.get_genes()) for c in individual.get_chromosomes()])
 
     def _population_phase(self) -> List[Individual]:
         chromosome_length: int = 6
@@ -38,7 +39,7 @@ class Simulation(ABC):
 
     def _fitness_phase(self):
         for individual in self.__population:
-            individual.set_fitness_score(self.__fitness_function(individual))
+            individual.set_fitness_score(self._fitness_function(individual))
 
     def _selection_phase(
         self,
@@ -98,9 +99,12 @@ class Simulation(ABC):
             individual.set_chromosomes(new_chromosomes)
 
     def run_simulation(self) -> List[Individual]:
-        self.__population = self._population_phase()
+        previous_generation: List[Individual] = list()
+        self.__population: List[Individual] = self._population_phase()
+        self.__generations += 1
         self._fitness_phase()
-        while not self.__has_converged():
+        while not self.__has_converged(previous_generation, self.__population):
+            previous_generation = deepcopy(self.__population)
             reproducers, recently_deceased = self._selection_phase()
             offspring: Tuple[Individual, Individual] = self._crossover_phase(
                 reproducers
@@ -111,6 +115,7 @@ class Simulation(ABC):
             self.__population.append(offspring[1])
             self._mutation_phase()
             self._fitness_phase()
+            self.__generations += 1
         return self.__population
 
 
