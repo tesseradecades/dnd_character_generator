@@ -1,9 +1,22 @@
 language: python
 python:
   - "3.8"
-# command to install dependencies
-install:
-  - pip install -r requirements.txt
-# command to run tests
-script:
-  - pytest test
+
+stages:
+  - lint
+  - test
+
+jobs:
+  include:
+    - stage: "Lint"
+      name: "Black"
+      install:
+        - pip install -r requirements.txt
+      script:
+        - black . --check --diff
+    - stage: "Test"
+      name: "Pytest"
+      install:
+        - pip install -r requirements.txt
+      script:
+        - pytest test
