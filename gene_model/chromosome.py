@@ -34,3 +34,4 @@ class Individual(ABC):
         all_genes: List[int] = []
         for chromosome in self._chromosomes:
             all_genes += chromosome.get_genes()
+        return all_genes
