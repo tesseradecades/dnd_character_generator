@@ -12,12 +12,14 @@ class Simulation(ABC):
         self,
         mutation_rate: float = 0.5,
         population_size: int = 4,
-        target_hamming_distance: int = 0,
+        starting_population: List[Individual] = [],
     ):
         super().__init__()
+        self.__current_max_fitness: int = 0
         self.__generations: int = 0
+        self.__generations_without_fitness_increase: int = 0
         self.__mutation_rate: float = mutation_rate
-        self.__population: List[Individual] = []
+        self.__population: List[Individual] = starting_population
         self.__population_size: int = population_size
 
     @staticmethod
@@ -29,19 +31,23 @@ class Simulation(ABC):
         previous_generation: List[Individual],
         current_generation: List[Individual],
     ) -> bool:
-        target_hamming_distance: int = (
-            len(current_generation[0].get_genes()) * len(current_generation)
-        ) * self.__mutation_rate
+        total_genes_in_population: int = len(current_generation[0].get_genes()) * len(
+            current_generation
+        )
+        target_hamming_distance: int = total_genes_in_population * self.__mutation_rate
         previous_generation_genes: List[int] = []
         for individual in self.__sort_by_fitness(previous_generation):
             previous_generation_genes += individual.get_genes()
         current_generation_genes: List[int] = []
         for individual in self.__sort_by_fitness(current_generation):
             current_generation_genes += individual.get_genes()
-        return (
+        criteria: List[bool] = [
             hamming_distance(previous_generation_genes, current_generation_genes)
-            <= target_hamming_distance
-        )
+            <= target_hamming_distance,
+            self.__generations_without_fitness_increase >= total_genes_in_population,
+            self.__generations >= total_genes_in_population ** 2,
+        ]
+        return sum(criteria) >= (len(criteria) / 2)
 
     @staticmethod
     def _fitness_function(individual: Individual) -> int:
@@ -56,7 +62,7 @@ class Simulation(ABC):
                 if bool(getrandbits(1)):
                     base_chromosome.flip_bit(gene)
             initial_population.append(
-                Individual([Chromosome(genes=base_chromosome.get_genes())])
+                Individual([Chromosome(genes=base_chromosome.get_genes())] * 27)
             )
         return initial_population
 
@@ -69,6 +75,11 @@ class Simulation(ABC):
     ) -> Tuple[Tuple[Individual, Individual], Tuple[Individual, Individual]]:
         sorted_population: List[Individual] = self.__sort_by_fitness(self.__population)
         fittest: Individual = sorted_population[0]
+        max_fitness: int = fittest.get_fitness_score()
+        if self.__current_max_fitness <= max_fitness:
+            self.__generations_without_fitness_increase += 1
+        else:
+            self.__generations_without_fitness_increase = 0
         second_fittest: Individual = sorted_population[1]
 
         current_population_size: int = len(sorted_population)
@@ -117,8 +128,9 @@ class Simulation(ABC):
 
     def run_simulation(self) -> List[Individual]:
         previous_generation: List[Individual] = list()
-        self.__population: List[Individual] = self._population_phase()
-        self.__generations += 1
+        if not self.__population:
+            self.__population = self._population_phase()
+        self.__generations = 1
         self.__fitness_phase()
         while not self.__has_converged(previous_generation, self.__population):
             previous_generation = deepcopy(self.__population)
@@ -137,5 +149,9 @@ class Simulation(ABC):
 
 
 class BasicSimulation(Simulation):
-    def __init__(self):
-        super().__init__()
+    def __init__(
+        self, mutation_rate: float = 0.5, starting_population: List[Individual] = []
+    ):
+        super().__init__(
+            mutation_rate=mutation_rate, starting_population=starting_population
+        )
