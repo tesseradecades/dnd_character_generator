@@ -20,7 +20,7 @@ class Simulation(ABC):
         self.__generations_without_fitness_increase: int = 0
         self.__mutation_rate: float = mutation_rate
         self.__population: List[Individual] = starting_population
-        self.__population_size: int = population_size
+        self._population_size: int = population_size
 
     @staticmethod
     def __sort_by_fitness(population: List[Individual]) -> List[Individual]:
@@ -57,12 +57,12 @@ class Simulation(ABC):
         chromosome_length: int = 6
         base_chromosome: Chromosome = Chromosome(length=chromosome_length)
         initial_population: List[Individual] = []
-        for ix in range(self.__population_size):
+        for ix in range(self._population_size):
             for gene in range(chromosome_length):
                 if bool(getrandbits(1)):
                     base_chromosome.flip_bit(gene)
             initial_population.append(
-                Individual([Chromosome(genes=base_chromosome.get_genes())] * 27)
+                Individual([Chromosome(genes=base_chromosome.get_genes())])
             )
         return initial_population
 
