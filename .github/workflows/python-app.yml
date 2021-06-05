@@ -12,7 +12,7 @@ on:
       - '*'
 
 jobs:
-  lint:
+  build:
 
     runs-on: ubuntu-latest
 
