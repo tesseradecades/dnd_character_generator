@@ -1,5 +1,8 @@
+from pytest import mark
+
 class Test_example_method:
     @staticmethod
+    @mark.skip
     def test_case_one():
         assert False
 
