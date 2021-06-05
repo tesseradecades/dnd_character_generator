@@ -30,10 +30,10 @@ class Individual(ABC):
 
     def __repr__(self):
         return (
-            f"Fitness Score:{self.get_fitness_score()}\tGenotype: {self._get_genes()}"
+            f"Fitness Score:{self.get_fitness_score()}\tGenotype: {self.get_genes()}"
         )
 
-    def _get_genes(self) -> List[int]:
+    def get_genes(self) -> List[int]:
         all_genes: List[int] = []
         for chromosome in self._chromosomes:
             all_genes += chromosome.get_genes()

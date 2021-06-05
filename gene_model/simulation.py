@@ -4,21 +4,44 @@ from random import getrandbits, randint
 from typing import Callable, List, Tuple
 
 from gene_model.chromosome import Chromosome, Individual
+from gene_model.convergence_tests import hamming_distance
 
 
 class Simulation(ABC):
     def __init__(
         self,
-        has_converged: Callable = lambda x, y: bool(getrandbits(1)),
         mutation_rate: float = 0.5,
         population_size: int = 4,
+        target_hamming_distance: int = 0,
     ):
         super().__init__()
         self.__generations: int = 0
-        self.__has_converged: Callable = has_converged
         self.__mutation_rate: float = mutation_rate
         self.__population: List[Individual] = []
         self.__population_size: int = population_size
+
+    @staticmethod
+    def __sort_by_fitness(population: List[Individual]) -> List[Individual]:
+        return sorted(population, reverse=True, key=lambda x: x.get_fitness_score())
+
+    def __has_converged(
+        self,
+        previous_generation: List[Individual],
+        current_generation: List[Individual],
+    ) -> bool:
+        target_hamming_distance: int = (
+            len(current_generation[0].get_genes()) * len(current_generation)
+        ) * self.__mutation_rate
+        previous_generation_genes: List[int] = []
+        for individual in self.__sort_by_fitness(previous_generation):
+            previous_generation_genes += individual.get_genes()
+        current_generation_genes: List[int] = []
+        for individual in self.__sort_by_fitness(current_generation):
+            current_generation_genes += individual.get_genes()
+        return (
+            hamming_distance(previous_generation_genes, current_generation_genes)
+            <= target_hamming_distance
+        )
 
     @staticmethod
     def _fitness_function(individual: Individual) -> int:
@@ -37,16 +60,14 @@ class Simulation(ABC):
             )
         return initial_population
 
-    def _fitness_phase(self):
+    def __fitness_phase(self):
         for individual in self.__population:
             individual.set_fitness_score(self._fitness_function(individual))
 
-    def _selection_phase(
+    def __selection_phase(
         self,
     ) -> Tuple[Tuple[Individual, Individual], Tuple[Individual, Individual]]:
-        sorted_population: List[Individual] = sorted(
-            self.__population, reverse=True, key=lambda x: x.get_fitness_score()
-        )
+        sorted_population: List[Individual] = self.__sort_by_fitness(self.__population)
         fittest: Individual = sorted_population[0]
         second_fittest: Individual = sorted_population[1]
 
@@ -82,30 +103,26 @@ class Simulation(ABC):
             child2_chromosomes.append(Chromosome(genes=child2_genes))
         return (Individual(child1_chromosomes), Individual(child2_chromosomes))
 
-    def _mutation_phase(self):
+    def __mutation_phase(self):
         for individual in self.__population:
             chromosomes: List[Chromosome] = individual.get_chromosomes()
             new_chromosomes: List[Chromosome] = list()
             for chromosome in chromosomes:
-                genes: List[int] = chromosome.get_genes()
-                for gene_ix in range(len(genes)):
-                    value: int = genes[gene_ix]
+                new_chromosome: Chromosome = Chromosome(genes=chromosome.get_genes())
+                for gene_ix in range(len(new_chromosome.get_genes())):
                     if randint(0, 100) < (100 * self.__mutation_rate):
-                        if value == 1:
-                            genes[gene_ix] = 0
-                        else:
-                            genes[gene_ix] = 1
-                new_chromosomes.append(Chromosome(genes=genes))
+                        new_chromosome.flip_bit(gene_ix)
+                new_chromosomes.append(new_chromosome)
             individual.set_chromosomes(new_chromosomes)
 
     def run_simulation(self) -> List[Individual]:
         previous_generation: List[Individual] = list()
         self.__population: List[Individual] = self._population_phase()
         self.__generations += 1
-        self._fitness_phase()
+        self.__fitness_phase()
         while not self.__has_converged(previous_generation, self.__population):
             previous_generation = deepcopy(self.__population)
-            reproducers, recently_deceased = self._selection_phase()
+            reproducers, recently_deceased = self.__selection_phase()
             offspring: Tuple[Individual, Individual] = self._crossover_phase(
                 reproducers
             )
@@ -113,8 +130,8 @@ class Simulation(ABC):
             self.__population.remove(recently_deceased[0])
             self.__population.append(offspring[0])
             self.__population.append(offspring[1])
-            self._mutation_phase()
-            self._fitness_phase()
+            self.__mutation_phase()
+            self.__fitness_phase()
             self.__generations += 1
         return self.__population
 
