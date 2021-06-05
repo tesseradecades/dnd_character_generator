@@ -26,12 +26,27 @@ class Chromosome:
 class Individual(ABC):
     def __init__(self, chromosomes: List[Chromosome]):
         self._chromosomes: List[Chromosome] = chromosomes
+        self.__fitness_score: int = 0
 
     def __repr__(self):
-        return f"Genotype:\t{self._get_genes()}"
+        return (
+            f"Fitness Score:{self.get_fitness_score()}\tGenotype: {self._get_genes()}"
+        )
 
     def _get_genes(self) -> List[int]:
         all_genes: List[int] = []
         for chromosome in self._chromosomes:
             all_genes += chromosome.get_genes()
         return all_genes
+
+    def get_chromosomes(self) -> List[Chromosome]:
+        return list(self._chromosomes)
+
+    def get_fitness_score(self) -> int:
+        return int(self.__fitness_score)
+
+    def set_chromosomes(self, chromosomes: List[Chromosome]):
+        self._chromosomes = chromosomes
+
+    def set_fitness_score(self, fitness_score: int):
+        self.__fitness_score = fitness_score
