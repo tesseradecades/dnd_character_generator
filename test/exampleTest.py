@@ -1,5 +1,6 @@
 from pytest import mark
 
+
 class Test_example_method:
     @staticmethod
     @mark.skip
