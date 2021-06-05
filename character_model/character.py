@@ -1,10 +1,10 @@
 from typing import Dict, List
 
 from character_model.actions.attacks import UnarmedStrike
-from gene_model.chromosome import Chromosome, Individual
+from gene_model.chromosome import Chromosome
 
 
-class Character(Individual):
+class Character:
     def __init__(self, chromosomes: List[Chromosome]):
         """
         Chromosomes
@@ -12,7 +12,7 @@ class Character(Individual):
             0:26 -> ability score chromosomes, each 6 bits in length
         ]
         """
-        super().__init__(chromosomes)
+        self._chromosomes: List[Chromosome] = chromosomes
         self.__charisma_score = 8
         self.__constitution_score = 8
         self.__dexterity_score = 8
@@ -43,14 +43,23 @@ class Character(Individual):
         if applied_points <= 5:
             return applied_points
         if applied_points <= 9:
-            return (applied_points + 5) / 2
+            return (applied_points + 5) // 2
         return 7
 
     def __str__(self):
         return f"Strength:\t{self.__strength_score}\nDexterity:\t{self.__dexterity_score}\nConstitution:\t{self.__constitution_score}\nIntelligence:\t{self.__intelligence_score}\nWisdom:\t{self.__wisdom_score}\nCharisma:\t{self.__charisma_score}"
 
     def __repr__(self):
-        return f"{self.__str__()}\n{super().__repr__()}"
+        return str(
+            {
+                "strength": self.__strength_score,
+                "dexterity": self.__dexterity_score,
+                "constitution": self.__constitution_score,
+                "intelligence": self.__intelligence_score,
+                "wisdom": self.__wisdom_score,
+                "charisma": self.__charisma_score,
+            }
+        )
 
     def get_actions(self) -> list:
         return [UnarmedStrike(self.__get_modifier(self.__strength_score))]
