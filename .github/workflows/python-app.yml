@@ -27,4 +27,4 @@ jobs:
         black . --check --diff
     - name: Test with pytest
       run: |
-        pytest -v test
+        pytest test
